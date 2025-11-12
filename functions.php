@@ -15,3 +15,13 @@ add_theme_support('align-wide');
 require get_template_directory() . '/inc/cpt.php';
 require get_template_directory() . '/inc/settings.php';
 require get_template_directory() . '/inc/blocks.php';
+
+
+// WebP image format
+add_filter('wp_get_attachment_image_src', function($image) {
+    $webp = str_replace(['.jpg', '.png'], '.webp', $image[0]);
+    if (file_exists(get_attached_file($image[1]))) {
+        $image[0] = $webp;
+    }
+    return $image;
+});

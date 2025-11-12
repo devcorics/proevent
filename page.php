@@ -1,5 +1,5 @@
 <?php get_header(); ?>
-<main>
+<main class="container mx-auto p-4">
     <?php
     if (have_posts()):
         while (have_posts()): the_post();
