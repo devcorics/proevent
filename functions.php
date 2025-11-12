@@ -1,274 +1,104 @@
 <?php
-defined('ABSPATH') || exit;
+/**
+ * ProEvent functions and definitions
+ * Requires: WP 6.8+, PHP 8.2+
+ */
 
-function proevent_setup() {
-  add_theme_support('post-thumbnails');
-  add_theme_support('title-tag');
-}
-add_action('after_setup_theme', 'proevent_setup');
+if ( ! defined( 'ABSPATH' ) ) exit;
 
-function proevent_enqueue_assets() {
-  wp_enqueue_style('proevent-style', get_stylesheet_uri());
-}
-add_action('wp_enqueue_scripts', 'proevent_enqueue_assets');
+/* -----------------------------
+ * Theme constants
+ * ----------------------------- */
+define( 'PE_THEME_DIR', get_template_directory() );
+define( 'PE_THEME_URI', get_template_directory_uri() );
 
-function proevent_register_cpt() {
-  register_post_type('event', [
-    'label' => 'Events',
-    'public' => true,
-    'menu_icon' => 'dashicons-calendar-alt',
-    'supports' => ['title','editor','thumbnail'],
-    'has_archive' => true,
-  ]);
+/* -----------------------------
+ * Setup theme supports, menus
+ * ----------------------------- */
+add_action( 'after_setup_theme', function() {
+    load_theme_textdomain( 'proevent', PE_THEME_DIR . '/languages' );
+    add_theme_support( 'title-tag' );
+    add_theme_support( 'post-thumbnails' );
+    add_image_size( 'pe-thumb-medium', 640, 420, true );
+    add_image_size( 'pe-thumb-large', 1200, 780, true );
 
-  register_taxonomy('event-category', 'event', [
-    'label' => 'Event Categories',
-    'hierarchical' => true,
-  ]);
-}
-add_action('init', 'proevent_register_cpt');
+    add_theme_support( 'html5', array( 'search-form', 'comment-form', 'gallery', 'caption' ) );
 
-
-add_action('rest_api_init', function() {
-  register_rest_route('proevent/v1', '/next', [
-    'methods' => 'GET',
-    'callback' => 'proevent_get_next_events',
-  ]);
+    register_nav_menus( array(
+        'primary' => __( 'Primary Menu', 'proevent' ),
+        'footer'  => __( 'Footer Menu', 'proevent' ),
+    ) );
 });
 
-function proevent_get_next_events() {
-  $today = date('Y-m-d');
-  $query = new WP_Query([
-    'post_type' => 'event',
-    'meta_key' => 'event_date',
-    'meta_value' => $today,
-    'meta_compare' => '>=',
-    'orderby' => 'meta_value',
-    'order' => 'ASC',
-    'posts_per_page' => 5,
-  ]);
+/* -----------------------------
+ * Enqueue assets (Tailwind CSS built file + small JS)
+ * ----------------------------- */
+add_action( 'wp_enqueue_scripts', function() {
+    // Tailwind built CSS (path: assets/dist/tailwind.css)
+    $css_file = PE_THEME_DIR . '/assets/dist/tailwind.css';
+    if ( file_exists( $css_file ) ) {
+        wp_enqueue_style( 'proevent-tailwind', PE_THEME_URI . '/assets/dist/tailwind.css', array(), filemtime( $css_file ) );
+    } else {
+        // fallback small CSS if build missing
+        wp_enqueue_style( 'proevent-fallback', PE_THEME_URI . '/assets/fallback.css', array(), '0.1' );
+    }
 
-  $events = [];
-  foreach($query->posts as $post) {
-    $events[] = [
-      'title' => get_the_title($post),
-      'link' => get_permalink($post),
-      'date' => get_post_meta($post->ID, 'event_date', true),
-    ];
-  }
-  return $events;
-}
+    // Theme main script (defer)
+    wp_register_script( 'proevent-main', PE_THEME_URI . '/assets/dist/main.js', array(), filemtime( PE_THEME_DIR . '/assets/dist/main.js' ), true );
+    wp_script_add_data( 'proevent-main', 'defer', true );
+    wp_enqueue_script( 'proevent-main' );
 
-// Add Company Settings page in WP Admin
-function proevent_add_company_settings_page() {
-    add_theme_page(
-        'Company Settings',      // Page title
-        'Company Settings',      // Menu title
-        'manage_options',        // Capability
-        'proevent-company-settings', // Menu slug
-        'proevent_render_settings_page' // Callback function
-    );
-}
-add_action('admin_menu', 'proevent_add_company_settings_page');
+    // Localize a tiny config (example: REST endpoint)
+    wp_localize_script( 'proevent-main', 'PE_Config', array(
+        'restBase' => esc_url_raw( rest_url( '/proevent/v1' ) ),
+    ) );
+});
 
-// Register settings
-function proevent_register_theme_settings() {
-    register_setting('proevent_settings_group', 'proevent_logo');
-    register_setting('proevent_settings_group', 'proevent_brand_color');
-    register_setting('proevent_settings_group', 'proevent_facebook');
-    register_setting('proevent_settings_group', 'proevent_twitter');
-    register_setting('proevent_settings_group', 'proevent_instagram');
-}
-add_action('admin_init', 'proevent_register_theme_settings');
-
-// Render settings page
-function proevent_render_settings_page() {
-    ?>
-    <div class="wrap">
-        <h1>Company Settings</h1>
-        <form method="post" action="options.php" enctype="multipart/form-data">
-            <?php settings_fields('proevent_settings_group'); ?>
-            <?php do_settings_sections('proevent_settings_group'); ?>
-
-            <table class="form-table">
-
-                <!-- Logo -->
-                <tr valign="top">
-                    <th scope="row">Company Logo</th>
-                    <td>
-                        <?php $logo = esc_url(get_option('proevent_logo')); ?>
-                        <input type="text" name="proevent_logo" id="proevent_logo" value="<?php echo $logo; ?>" style="width:50%;" />
-                        <input type="button" class="button" id="upload_logo_button" value="Upload Logo" />
-                        <input type="button" class="button" id="clear_logo_button" value="Clear Logo" />
-                        <div id="logo_preview" style="margin-top:10px;">
-                            <?php if ($logo): ?>
-                                <img src="<?php echo $logo; ?>" style="max-width:200px; height:auto;" />
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
-
-                <!-- Brand Color -->
-                <tr valign="top">
-                    <th scope="row">Brand Color</th>
-                    <td>
-                        <input type="color" name="proevent_brand_color" value="<?php echo esc_attr(get_option('proevent_brand_color', '#000000')); ?>" />
-                    </td>
-                </tr>
-
-                <!-- Social Links -->
-                <tr valign="top">
-                    <th scope="row">Facebook URL</th>
-                    <td><input type="url" name="proevent_facebook" value="<?php echo esc_attr(get_option('proevent_facebook')); ?>" style="width:60%;" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">LinkedIn URL</th>
-                    <td><input type="url" name="proevent_linkedin" value="<?php echo esc_attr(get_option('proevent_linkedin')); ?>" style="width:60%;" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Instagram URL</th>
-                    <td><input type="url" name="proevent_instagram" value="<?php echo esc_attr(get_option('proevent_instagram')); ?>" style="width:60%;" /></td>
-                </tr>
-
-            </table>
-
-            <?php submit_button(); ?>
-        </form>
-    </div>
-
-    <script>
-    jQuery(document).ready(function($){
-        // Logo uploader
-        $('#upload_logo_button').click(function(e){
-            e.preventDefault();
-            var custom_uploader = wp.media.frames.file_frame = wp.media({
-                title: 'Select Logo',
-                button: { text: 'Select Logo' },
-                multiple: false
-            });
-            custom_uploader.on('select', function(){
-                var attachment = custom_uploader.state().get('selection').first().toJSON();
-                $('#proevent_logo').val(attachment.url);
-                $('#logo_preview').html('<img src="'+attachment.url+'" style="max-width:200px;height:auto;" />');
-            });
-            custom_uploader.open();
-        });
-
-        // Clear logo
-        $('#clear_logo_button').click(function(){
-            $('#proevent_logo').val('');
-            $('#logo_preview').html('');
-        });
-    });
-    </script>
-    <?php
-}
-
-// Enqueue media uploader script for this page
-function proevent_enqueue_admin_scripts($hook) {
-    if ($hook !== 'appearance_page_proevent-company-settings') return;
-    wp_enqueue_media();
-    wp_enqueue_script('jquery');
-}
-add_action('admin_enqueue_scripts', 'proevent_enqueue_admin_scripts');
-
-
-// Register custom meta fields for Event CPT
-function proevent_register_event_meta() {
-
-    $fields = [
-        'event_date',
-        'event_time',
-        'event_location',
-        'event_registration_link'
-    ];
-
-    foreach ($fields as $field) {
-        register_post_meta('event', $field, [
-            'show_in_rest' => true,
-            'single'       => true,
-            'type'         => 'string',
-            'sanitize_callback' => 'sanitize_text_field'
-        ]);
+/* -----------------------------
+ * Short helper: get company settings (from plugin options)
+ * ----------------------------- */
+if ( ! function_exists( 'pe_get_company' ) ) {
+    function pe_get_company( $key = '' ) {
+        $map = array(
+            'logo' => get_option( 'pe_logo' ),
+            'brand_color' => get_option( 'pe_brand_color' ),
+            'social' => json_decode( get_option( 'pe_social_links', '{}' ), true ),
+        );
+        return $key ? ( $map[$key] ?? false ) : $map;
     }
 }
-add_action('init', 'proevent_register_event_meta');
 
+/* -----------------------------
+ * Excerpt length & read more
+ * ----------------------------- */
+add_filter( 'excerpt_length', function( $len ) { return 20; }, 999 );
+add_filter( 'excerpt_more', function( $more ) { return ' &hellip;'; } );
 
-// Add admin metabox
-function proevent_add_event_metabox() {
-    add_meta_box(
-        'proevent_event_fields',
-        'Event Details',
-        'proevent_event_metabox_html',
-        'event',
-        'normal',
-        'high'
-    );
-}
-add_action('add_meta_boxes', 'proevent_add_event_metabox');
-
-
-function proevent_event_metabox_html($post) {
-
-    $event_date  = get_post_meta($post->ID, 'event_date', true);
-    $event_time  = get_post_meta($post->ID, 'event_time', true);
-    $location    = get_post_meta($post->ID, 'event_location', true);
-    $reg_link    = get_post_meta($post->ID, 'event_registration_link', true);
-
-    wp_nonce_field('proevent_event_fields_nonce', 'proevent_event_fields_nonce');
-    ?>
-
-    <style>
-        .proevent-field { margin-bottom: 15px; }
-        .proevent-field label { font-weight: 600; display:block; margin-bottom: 5px; }
-        .proevent-field input { width: 100%; }
-    </style>
-
-    <div class="proevent-field">
-        <label>Event Date</label>
-        <input type="date" name="event_date" value="<?php echo esc_attr($event_date); ?>">
-    </div>
-
-    <div class="proevent-field">
-        <label>Event Time</label>
-        <input type="time" name="event_time" value="<?php echo esc_attr($event_time); ?>">
-    </div>
-
-    <div class="proevent-field">
-        <label>Location</label>
-        <input type="text" name="event_location" value="<?php echo esc_attr($location); ?>">
-    </div>
-
-    <div class="proevent-field">
-        <label>Registration Link</label>
-        <input type="url" name="event_registration_link" value="<?php echo esc_attr($reg_link); ?>">
-    </div>
-
-    <?php
-}
-
-
-function proevent_save_event_fields($post_id) {
-
-    if (!isset($_POST['proevent_event_fields_nonce'])) return;
-    if (!wp_verify_nonce($_POST['proevent_event_fields_nonce'], 'proevent_event_fields_nonce')) return;
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-    if (!current_user_can('edit_post', $post_id)) return;
-
-    $fields = [
-        'event_date',
-        'event_time',
-        'event_location',
-        'event_registration_link'
-    ];
-
-    foreach ($fields as $field) {
-        if (isset($_POST[$field])) {
-            update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
-        }
+/* -----------------------------
+ * Optimize images: add loading="lazy" by default to post thumbnails
+ * ----------------------------- */
+add_filter( 'wp_get_attachment_image_attributes', function( $attr, $attachment ) {
+    if ( empty( $attr['loading'] ) ) {
+        $attr['loading'] = 'lazy';
     }
+    return $attr;
+}, 10, 2 );
+
+/* -----------------------------
+ * Register widget areas (optional)
+ * ----------------------------- */
+add_action( 'widgets_init', function() {
+    register_sidebar( array(
+        'name' => __( 'Footer', 'proevent' ),
+        'id' => 'sidebar-footer',
+        'before_widget' => '<div class="footer-widget">',
+        'after_widget' => '</div>',
+    ) );
+});
+
+/* -----------------------------
+ * Include template helpers (if exists)
+ * ----------------------------- */
+if ( file_exists( __DIR__ . '/inc/template-helpers.php' ) ) {
+    require_once __DIR__ . '/inc/template-helpers.php';
 }
-add_action('save_post_event', 'proevent_save_event_fields');
-
-

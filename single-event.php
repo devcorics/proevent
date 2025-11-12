@@ -1,97 +1,61 @@
 <?php get_header(); ?>
 
-<?php
-// Fetch custom event fields
-$event_date  = get_post_meta(get_the_ID(), 'event_date', true);
-$event_time  = get_post_meta(get_the_ID(), 'event_time', true);
-$location    = get_post_meta(get_the_ID(), 'event_location', true);
-$reg_link    = get_post_meta(get_the_ID(), 'event_registration_link', true);
-
-// Format date (optional)
-$event_date_formatted = $event_date ? date("F j, Y", strtotime($event_date)) : '';
+<?php if ( have_posts() ) while ( have_posts() ) : the_post(); 
+  $date = get_post_meta( get_the_ID(), '_pe_date', true );
+  $time = get_post_meta( get_the_ID(), '_pe_time', true );
+  $location = get_post_meta( get_the_ID(), '_pe_location', true );
+  $reg = get_post_meta( get_the_ID(), '_pe_registration', true );
 ?>
+<div class="container mx-auto px-4 py-8">
+  <article class="proevent-article max-w-4xl mx-auto">
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold"><?php the_title(); ?></h1>
+      <div class="text-sm text-gray-600 mt-2">
+        <?php if ( $date ): ?><time datetime="<?php echo esc_attr( $date ); ?>"><?php echo date_i18n( get_option('date_format'), strtotime($date) ); ?></time><?php endif; ?>
+        <?php if ( $time ): ?> • <?php echo esc_html( $time ); ?><?php endif; ?>
+        <?php if ( $location ): ?> • <?php echo esc_html( $location ); ?><?php endif; ?>
+      </div>
+    </header>
 
-<main class="container mx-auto py-10">
+    <?php if ( has_post_thumbnail() ): ?>
+      <div class="mb-6">
+        <?php the_post_thumbnail( 'pe-thumb-large', array( 'class' => 'w-full h-auto rounded', 'loading' => 'lazy' ) ); ?>
+      </div>
+    <?php endif; ?>
 
-    <!-- Event Title -->
-    <h1 class="text-4xl font-bold mb-6">
-        <?php the_title(); ?>
-    </h1>
-
-    <!-- Event Meta Section -->
-    <div class="bg-gray-100 p-6 rounded-xl mb-8">
-
-        <?php if ($event_date): ?>
-            <p class="text-lg"><strong>Date:</strong> <?php echo esc_html($event_date_formatted); ?></p>
-        <?php endif; ?>
-
-        <?php if ($event_time): ?>
-            <p class="text-lg"><strong>Time:</strong> <?php echo esc_html($event_time); ?></p>
-        <?php endif; ?>
-
-        <?php if ($location): ?>
-            <p class="text-lg"><strong>Location:</strong> <?php echo esc_html($location); ?></p>
-        <?php endif; ?>
-
-        <?php if ($reg_link): ?>
-            <p class="mt-4">
-                <a href="<?php echo esc_url($reg_link); ?>" target="_blank" class="inline-block bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700">
-                    Register Now →
-                </a>
-            </p>
-        <?php endif; ?>
-
+    <div class="proevent-content prose max-w-none">
+      <?php the_content(); ?>
     </div>
 
-    <!-- Featured Image -->
-    <?php if (has_post_thumbnail()): ?>
-        <div class="mb-8">
-            <?php the_post_thumbnail('large', ['class' => 'rounded-xl w-full h-auto']); ?>
-        </div>
+    <?php if ( $reg ): ?>
+      <p class="mt-6">
+        <a href="<?php echo esc_url( $reg ); ?>" target="_blank" rel="noopener" class="inline-block px-4 py-2 rounded bg-indigo-600 text-white">Register</a>
+      </p>
     <?php endif; ?>
 
-    <!-- Event Content -->
-    <article class="prose max-w-none">
-        <?php the_content(); ?>
-    </article>
-
-    <!-- Related Events by Category -->
+    <!-- Related events by category -->
     <?php
-    $terms = wp_get_post_terms(get_the_ID(), 'event-category', ['fields' => 'ids']);
-
-    if ($terms) {
-        $related_events = new WP_Query([
-            'post_type' => 'event',
-            'post__not_in' => [get_the_ID()],
-            'posts_per_page' => 3,
-            'tax_query' => [
-                [
-                    'taxonomy' => 'event-category',
-                    'field'    => 'term_id',
-                    'terms'    => $terms,
-                ]
-            ]
-        ]);
-    ?>
-
-    <?php if (!empty($related_events->posts)): ?>
-        <h2 class="text-2xl font-bold mt-12 mb-6">Related Events</h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <?php foreach ($related_events->posts as $event): ?>
-                <div class="p-5 border rounded-lg bg-white shadow-sm hover:shadow-md transition">
-                    <h3 class="text-xl font-semibold">
-                        <a href="<?php echo get_permalink($event->ID); ?>" class="hover:underline">
-                            <?php echo esc_html($event->post_title); ?>
-                        </a>
-                    </h3>
-                </div>
-            <?php endforeach; ?>
-        </div>
+    $terms = wp_get_post_terms( get_the_ID(), 'event-category', array( 'fields' => 'ids' ) );
+    if ( ! empty( $terms ) ) :
+      $rel = new WP_Query( array(
+        'post_type' => 'event',
+        'posts_per_page' => 3,
+        'post__not_in' => array( get_the_ID() ),
+        'tax_query' => array( array( 'taxonomy' => 'event-category', 'field' => 'term_id', 'terms' => $terms ) )
+      ) );
+      if ( $rel->have_posts() ) : ?>
+        <section class="mt-10">
+          <h3 class="text-xl font-semibold mb-4">Related events</h3>
+          <div class="grid md:grid-cols-3 gap-4">
+            <?php while ( $rel->have_posts() ) : $rel->the_post(); get_template_part( 'template-parts/event', 'card' ); endwhile; wp_reset_postdata(); ?>
+          </div>
+        </section>
+      <?php endif; ?>
     <?php endif; ?>
 
-    <?php wp_reset_postdata(); } ?>
+  </article>
+</div>
 
-</main>
+<?php endwhile; ?>
 
 <?php get_footer(); ?>
