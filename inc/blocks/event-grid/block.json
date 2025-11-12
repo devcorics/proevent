@@ -1,0 +1,17 @@
+{
+  "apiVersion": 2,
+  "name": "proevent/event-grid",
+  "title": "Event Grid",
+  "category": "widgets",
+  "icon": "grid-view",
+  "description": "Display a grid of upcoming events",
+  "supports": {
+    "html": false
+  },
+  "editorScript": "file:index.js",
+  "attributes": {
+    "limit": { "type": "number", "default": 6 },
+    "category": { "type": "string", "default": "" },
+    "order": { "type": "string", "default": "ASC" }
+  }
+}
