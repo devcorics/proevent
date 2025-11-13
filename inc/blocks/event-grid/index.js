@@ -1,41 +1,45 @@
 const { registerBlockType } = wp.blocks;
 const { TextControl, SelectControl } = wp.components;
-const { useBlockProps } = wp.blockEditor || wp.editor;
-const { Fragment, useEffect, useState } = wp.element;
+const { InspectorControls } = wp.blockEditor;
+const { __ } = wp.i18n;
 
 registerBlockType('proevent/event-grid', {
-    edit: ({ attributes, setAttributes }) => {
-        const { limit, category, order } = attributes;
-
-        return (
-            <div {...useBlockProps()} style={{ border: "1px dashed #ccc", padding: "20px" }}>
+    title: __('Event Grid', 'proevent'),
+    icon: 'calendar',
+    category: 'widgets',
+    attributes: {
+        limit: { type: 'number', default: 6 },
+        category: { type: 'string', default: '' },
+        sort: { type: 'string', default: 'ASC' }
+    },
+    edit: ({ attributes, setAttributes }) => (
+        <>
+            <InspectorControls>
                 <TextControl
                     label="Number of Events"
+                    value={attributes.limit}
                     type="number"
-                    value={limit}
                     onChange={(value) => setAttributes({ limit: parseInt(value) })}
                 />
                 <TextControl
-                    label="Category Slug (optional)"
-                    value={category}
+                    label="Category Slug"
+                    value={attributes.category}
                     onChange={(value) => setAttributes({ category: value })}
                 />
                 <SelectControl
-                    label="Order"
-                    value={order}
+                    label="Sort Order"
+                    value={attributes.sort}
                     options={[
-                        { label: "Ascending", value: "ASC" },
-                        { label: "Descending", value: "DESC" }
+                        { label: 'Ascending', value: 'ASC' },
+                        { label: 'Descending', value: 'DESC' }
                     ]}
-                    onChange={(value) => setAttributes({ order: value })}
+                    onChange={(value) => setAttributes({ sort: value })}
                 />
-                <p>Preview not available in editor. Save to view on frontend.</p>
+            </InspectorControls>
+            <div className="event-grid-placeholder">
+                <p>{`Event Grid: ${attributes.limit} posts, category: ${attributes.category || 'All'}, sorted ${attributes.sort}`}</p>
             </div>
-        );
-    },
-    save: ({ attributes }) => {
-        const { limit, category, order } = attributes;
-        // Frontend rendering via PHP
-        return null;
-    }
+        </>
+    ),
+    save: () => null
 });

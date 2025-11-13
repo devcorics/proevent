@@ -2,17 +2,30 @@
   "apiVersion": 2,
   "name": "proevent/hero-cta",
   "title": "Hero with CTA",
-  "category": "widgets",
+  "category": "design",
   "icon": "cover-image",
-  "description": "A hero block with image, heading and CTA button",
+  "description": "A hero section with dynamic image, heading, and button",
   "supports": {
     "html": false
   },
-  "editorScript": "file:index.js",
   "attributes": {
-    "title": { "type": "string", "default": "Welcome to ProEvent" },
-    "imageUrl": { "type": "string", "default": "" },
-    "buttonText": { "type": "string", "default": "Register Now" },
-    "buttonUrl": { "type": "string", "default": "#" }
-  }
+    "heroImage": {
+      "type": "string",
+      "default": ""
+    },
+    "heading": {
+      "type": "string",
+      "default": "Your Hero Heading"
+    },
+    "buttonText": {
+      "type": "string",
+      "default": "Click Here"
+    },
+    "buttonURL": {
+      "type": "string",
+      "default": "#"
+    }
+  },
+  "editorScript": "file:./index.js",
+  "style": "file:./style.css"
 }

@@ -14,8 +14,6 @@ function proevent_register_settings_page() {
 }
 add_action('admin_menu', 'proevent_register_settings_page');
 
-
-
 // Register settings
 function proevent_register_theme_settings() {
     register_setting('proevent_settings_group', 'proevent_logo');

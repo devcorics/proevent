@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/devcorics/proevent#readme",
   "devDependencies": {
+    "@wordpress/scripts": "^31.0.0",
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6"
   },
