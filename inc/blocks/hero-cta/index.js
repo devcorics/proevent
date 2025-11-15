@@ -1,84 +1,68 @@
 import { registerBlockType } from '@wordpress/blocks';
-import { MediaUpload, MediaUploadCheck, RichText, URLInputButton } from '@wordpress/block-editor';
+import { MediaUpload, RichText, URLInputButton } from '@wordpress/block-editor';
 import { Button } from '@wordpress/components';
-import './style.css';
 
 registerBlockType('proevent/hero-cta', {
     edit: ({ attributes, setAttributes }) => {
-        const { heroImage, heading, buttonText, buttonURL } = attributes;
+        const { imageUrl, imageAlt, heading, buttonText, buttonUrl } = attributes;
 
         return (
-            <div className="hero-cta-block" style={{ textAlign: 'center', padding: '50px 20px' }}>
-                <MediaUploadCheck>
-                    <MediaUpload
-                        onSelect={(media) => setAttributes({ heroImage: media.url })}
-                        allowedTypes={['image']}
-                        value={heroImage}
-                        render={({ open }) => (
-                            <Button onClick={open} isPrimary>
-                                {heroImage ? 'Change Hero Image' : 'Select Hero Image'}
-                            </Button>
-                        )}
-                    />
-                </MediaUploadCheck>
-
-                {heroImage && (
-                    <div style={{ margin: '20px 0' }}>
-                        <img src={heroImage} alt="Hero Image" style={{ maxWidth: '100%' }} />
-                    </div>
+            <div className="hero-cta p-6 text-center bg-gray-100 rounded-lg">
+                <MediaUpload
+                    onSelect={(media) => setAttributes({ imageUrl: media.url, imageAlt: media.alt })}
+                    allowedTypes={['image']}
+                    value={imageUrl}
+                    render={({ open }) => (
+                        <Button onClick={open} isSecondary>
+                            { imageUrl ? 'Change Image' : 'Upload Image' }
+                        </Button>
+                    )}
+                />
+                { imageUrl && (
+                    <img src={imageUrl} alt={imageAlt || ''} className="my-4 mx-auto max-w-full h-auto rounded" />
                 )}
-
                 <RichText
                     tagName="h1"
-                    placeholder="Hero Heading"
+                    placeholder="Enter heading..."
                     value={heading}
                     onChange={(value) => setAttributes({ heading: value })}
-                    style={{ fontSize: '2rem', margin: '20px 0' }}
+                    className="text-3xl font-bold mb-4"
                 />
-
                 <RichText
-                    tagName="div"
-                    placeholder="Button Text"
+                    tagName="a"
+                    placeholder="Button text..."
                     value={buttonText}
                     onChange={(value) => setAttributes({ buttonText: value })}
-                    style={{ marginBottom: '10px' }}
+                    className="inline-block px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 />
-
                 <URLInputButton
-                    url={buttonURL}
-                    onChange={(url) => setAttributes({ buttonURL: url })}
+                    url={buttonUrl}
+                    onChange={(url) => setAttributes({ buttonUrl: url })}
                 />
             </div>
         );
     },
-
     save: ({ attributes }) => {
-        const { heroImage, heading, buttonText, buttonURL } = attributes;
+        const { imageUrl, imageAlt, heading, buttonText, buttonUrl } = attributes;
 
         return (
-            <section className="hero-cta" style={{ 
-                backgroundImage: `url(${heroImage})`, 
-                padding: '100px 20px', 
-                textAlign: 'center', 
-                color: '#fff', 
-                backgroundSize: 'cover', 
-                backgroundPosition: 'center' 
-            }}>
-                {heading && <h1>{heading}</h1>}
-                {buttonText && buttonURL && (
-                    <a href={buttonURL} className="hero-button" style={{ 
-                        display: 'inline-block', 
-                        marginTop: '20px', 
-                        padding: '10px 20px', 
-                        background: '#ff0000', 
-                        color: '#fff', 
-                        textDecoration: 'none', 
-                        borderRadius: '5px' 
-                    }}>
+            <div className="hero-cta p-6 text-center bg-gray-100 rounded-lg">
+                { imageUrl ? (
+                    <img src={imageUrl} alt={imageAlt || ''} className="my-4 mx-auto max-w-full h-auto rounded" />
+                ) : (
+                    <div className="bg-gray-300 w-full h-40 mb-4 rounded flex items-center justify-center text-gray-500">
+                        Hero Image
+                    </div>
+                )}
+                { heading ? <h1 className="text-3xl font-bold mb-4">{heading}</h1> : <h1 className="text-3xl font-bold mb-4 text-gray-400">Heading</h1>}
+                { buttonText && buttonUrl ? (
+                    <a href={buttonUrl} className="inline-block px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         {buttonText}
                     </a>
+                ) : (
+                    <a href="#" className="inline-block px-6 py-3 bg-blue-400 text-white rounded cursor-not-allowed">Button</a>
                 )}
-            </section>
+            </div>
         );
-    }
+    },
 });

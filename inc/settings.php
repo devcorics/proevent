@@ -114,7 +114,10 @@ function proevent_render_settings_page() {
 
 // Enqueue media uploader script for this page
 function proevent_enqueue_admin_scripts($hook) {
-    if ($hook !== 'appearance_page_proevent-company-settings') return;
+    if ($hook !== 'toplevel_page_proevent-company-settings') {
+        return;
+    }
+
     wp_enqueue_media();
     wp_enqueue_script('jquery');
 }

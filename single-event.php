@@ -1,15 +1,36 @@
 <?php get_header(); ?>
-<main>
+<main class="container mx-auto px-4 py-12">
     <?php
     if (have_posts()):
-        while (have_posts()): the_post(); ?>
+        while (have_posts()): the_post(); 
+
+            $event_link = get_post_meta(get_the_ID(), '_event_link', true);
+
+            $event_date = get_post_meta(get_the_ID(), '_event_date', true);
+
+            $event_time = get_post_meta(get_the_ID(), '_event_time', true);
+
+            $event_location = get_post_meta(get_the_ID(), '_event_location', true);
+
+            ?>
+
             <article class="event-single">
                 <h1><?php the_title(); ?></h1>
-                <p><strong>Date:</strong> <?php echo get_post_meta(get_the_ID(), '_event_date', true); ?></p>
-                <p><strong>Time:</strong> <?php echo get_post_meta(get_the_ID(), '_event_time', true); ?></p>
-                <p><strong>Location:</strong> <?php echo get_post_meta(get_the_ID(), '_event_location', true); ?></p>
-                <p><a href="<?php echo get_post_meta(get_the_ID(), '_event_link', true); ?>" target="_blank" rel="noopener">Register</a></p>
+
+                <p><strong>Date:</strong> <?php echo $event_date; ?></p>
+
+                <p><strong>Time:</strong> <?php echo $event_time; ?></p>
+
+                <p><strong>Location:</strong> <?php echo $event_location; ?></p>
+
+                <?php if( !empty($event_link) ){ ?>
+                <p><strong>Register Link:</strong> <a href="<?php $event_link; ?>" target="_blank" rel="noopener"><?php echo $event_link; ?></a></p>
+                <?php } ?>
+
+                <br>
+                
                 <div class="event-content"><?php the_content(); ?></div>
+
             </article>
 
             <?php
@@ -31,6 +52,8 @@
                 $related_events = new WP_Query($related_args);
 
                 if ($related_events->have_posts()): ?>
+                    <br>
+                    <br>
                     <section class="related-events">
                         <h2>Related Events</h2>
                         <ul>

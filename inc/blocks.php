@@ -1,11 +1,44 @@
 <?php
 
 /* Custom Block - Hero CTA */
-function proevent_register_blocks() {
+function proevent_register_hero_cta_block() {
     register_block_type( get_template_directory() . '/inc/blocks/hero-cta' );
 }
-add_action('init', 'proevent_register_blocks');
+add_action('init', 'proevent_register_hero_cta_block');
 
+function proevent_hero_cta_render($atts = []) {
+    $defaults = [
+        'imageUrl'   => '', 
+        'imageAlt'   => '', 
+        'heading'    => 'Your Heading', 
+        'buttonText' => 'Click Here', 
+        'buttonUrl'  => '#'
+    ];
+    $atts = wp_parse_args($atts, $defaults);
+
+    ob_start(); // Start output buffering
+    ?>
+    <div class="hero-cta p-6 text-center bg-gray-100 rounded-lg">
+        <?php if ( ! empty($atts['imageUrl']) ) : ?>
+            <img src="<?php echo esc_url($atts['imageUrl']); ?>" alt="<?php echo esc_attr($atts['imageAlt']); ?>" class="my-4 mx-auto max-w-full h-auto rounded">
+        <?php else: ?>
+            <div class="bg-gray-300 w-full h-40 mb-4 rounded flex items-center justify-center text-gray-500">Hero Image</div>
+        <?php endif; ?>
+
+        <h1 class="text-3xl font-bold mb-4 text-black"><?php echo esc_html($atts['heading']); ?></h1>
+
+<a href="<?php echo esc_url($atts['buttonUrl']); ?>" 
+   class="hero-cta-button inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 hover:shadow-lg transition-all duration-300">
+    <?php echo esc_html($atts['buttonText']); ?>
+</a>
+
+
+
+
+    </div>
+    <?php
+    return ob_get_clean(); // Return the HTML
+}
 
 /* Custom Block - Event Grid */
 function proevent_register_event_grid_block() {
@@ -50,23 +83,31 @@ function proevent_event_grid_render($attributes) {
     }
 
     $events = new WP_Query($args);
+
     if (!$events->have_posts()) {
-        return '<p>No events found.</p>';
+        return '<p class="text-gray-500 italic">No events found.</p>';
     }
 
-    $output = '<div class="event-grid" style="display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">';
+    // Grid container
+    $output = '<div class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style="margin-bottom:20px;">';
+
     while ($events->have_posts()) {
         $events->the_post();
         $date = get_post_meta(get_the_ID(), '_event_date', true);
         $time = get_post_meta(get_the_ID(), '_event_time', true);
-        $output .= '<div class="event-item" style="padding:10px;border:1px solid #ddd;border-radius:8px;">';
-        $output .= '<h3>' . get_the_title() . '</h3>';
-        $output .= '<p>' . esc_html($date) . ' ' . esc_html($time) . '</p>';
+        $permalink = get_permalink();
+
+        // Event card
+        $output .= '<div class="event-item bg-white border border-gray-200 rounded-lg p-4 shadow hover:shadow-lg transition-shadow">';
+        $output .= '<h3 class="text-lg font-semibold mb-2"><a href="' . esc_url($permalink) . '" class="text-blue-600 hover:underline">' . get_the_title() . '</a></h3>';
+        $output .= '<p class="text-gray-600 text-sm">' . esc_html($date) . ' ' . esc_html($time) . '</p>';
         $output .= '</div>';
     }
-    $output .= '</div>';
-    wp_reset_postdata();
 
+    $output .= '</div>';
+
+    wp_reset_postdata();
+    
     return $output;
 }
 
