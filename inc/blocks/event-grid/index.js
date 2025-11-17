@@ -1,45 +1,49 @@
-const { registerBlockType } = wp.blocks;
-const { TextControl, SelectControl } = wp.components;
-const { InspectorControls } = wp.blockEditor;
-const { __ } = wp.i18n;
+(function (wp) {
+  const { registerBlockType } = wp.blocks;
+  const { InspectorControls, useBlockProps } = wp.blockEditor;
+  const { PanelBody, TextControl, SelectControl } = wp.components;
+  const el = wp.element.createElement;
 
-registerBlockType('proevent/event-grid', {
-    title: __('Event Grid', 'proevent'),
-    icon: 'calendar',
-    category: 'widgets',
-    attributes: {
-        limit: { type: 'number', default: 6 },
-        category: { type: 'string', default: '' },
-        sort: { type: 'string', default: 'ASC' }
+  registerBlockType("proevent/event-grid", {
+    edit: (props) => {
+      const { attributes, setAttributes } = props;
+
+      return el("div", useBlockProps(), [
+        el(
+          InspectorControls,
+          {},
+          el(PanelBody, { title: "Event Grid Settings", initialOpen: true }, [
+            el(TextControl, {
+              label: "Limit",
+              type: "number",
+              value: attributes.limit,
+              onChange: (value) =>
+                setAttributes({ limit: parseInt(value) || 0 }),
+            }),
+            el(TextControl, {
+              label: "Category (slug)",
+              value: attributes.category,
+              onChange: (value) => setAttributes({ category: value }),
+            }),
+            el(SelectControl, {
+              label: "Sorting",
+              value: attributes.order,
+              options: [
+                { label: "DESC (Newest First)", value: "DESC" },
+                { label: "ASC (Oldest First)", value: "ASC" },
+              ],
+              onChange: (value) => setAttributes({ order: value }),
+            }),
+          ]),
+        ),
+
+        el(
+          "div",
+          { className: "event-grid-placeholder" },
+          "Event Grid preview will appear on the front-end.",
+        ),
+      ]);
     },
-    edit: ({ attributes, setAttributes }) => (
-        <>
-            <InspectorControls>
-                <TextControl
-                    label="Number of Events"
-                    value={attributes.limit}
-                    type="number"
-                    onChange={(value) => setAttributes({ limit: parseInt(value) })}
-                />
-                <TextControl
-                    label="Category Slug"
-                    value={attributes.category}
-                    onChange={(value) => setAttributes({ category: value })}
-                />
-                <SelectControl
-                    label="Sort Order"
-                    value={attributes.sort}
-                    options={[
-                        { label: 'Ascending', value: 'ASC' },
-                        { label: 'Descending', value: 'DESC' }
-                    ]}
-                    onChange={(value) => setAttributes({ sort: value })}
-                />
-            </InspectorControls>
-            <div className="event-grid-placeholder">
-                <p>{`Event Grid: ${attributes.limit} posts, category: ${attributes.category || 'All'}, sorted ${attributes.sort}`}</p>
-            </div>
-        </>
-    ),
-    save: () => null
-});
+    save: () => null,
+  });
+})(window.wp);

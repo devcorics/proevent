@@ -1,1 +1,1 @@
-console.log('ProEvent theme loaded.');
+console.log("ProEvent theme loaded.");

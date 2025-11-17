@@ -26,19 +26,27 @@ function proevent_enqueue_assets() {
         array(),
         filemtime(get_stylesheet_directory() . '/src/output.css')
     );
-
+    
 }
 add_action('wp_enqueue_scripts', 'proevent_enqueue_assets');
+
 
 // Theme support
 add_theme_support('title-tag');
 add_theme_support('post-thumbnails');
 add_theme_support('align-wide');
  
+
 // Include files
 require get_template_directory() . '/inc/cpt.php'; // CPT Event, ACF-style custom fields
 require get_template_directory() . '/inc/settings.php'; // Company Settings custom settings page
-require get_template_directory() . '/inc/blocks.php'; // Custom Blocks: Hero CTA and Event Grid
+
+
+// Custom Blocks: Hero CTA and Event Grid
+add_action('init', function() {
+    require get_template_directory() . '/inc/blocks.php';
+});
+
 
 // Add Menu settings
 function proevent_setup() {
@@ -51,6 +59,7 @@ function proevent_setup() {
 }
 add_action('after_setup_theme', 'proevent_setup');
 
+
 // Automatically add lazy-loading to all images in post content
 function add_lazy_loading_to_images($content) {
     // Add loading="lazy" to all <img> tags that don't already have it
@@ -58,6 +67,7 @@ function add_lazy_loading_to_images($content) {
     return $content;
 }
 add_filter('the_content', 'add_lazy_loading_to_images');
+
 
 // WebP image format
 add_filter('wp_get_attachment_image_src', function($image, $attachment_id) {
@@ -70,3 +80,50 @@ add_filter('wp_get_attachment_image_src', function($image, $attachment_id) {
     }
     return $image;
 }, 10, 2);
+
+
+// Register custom REST API endpoint
+add_action('rest_api_init', function() {
+    register_rest_route('proevent/v1', '/next', [
+        'methods' => 'GET',
+        'callback' => 'proevent_get_next_events',
+        'permission_callback' => '__return_true', // public endpoint
+    ]);
+});
+function proevent_get_next_events() {
+    $today = date('Y-m-d');
+
+    $args = [
+        'post_type'      => 'event',
+        'posts_per_page' => 5,
+        'meta_key'       => '_event_date',
+        'orderby'        => 'meta_value',
+        'order'          => 'ASC',
+        'meta_query'     => [
+            [
+                'key'     => '_event_date',
+                'value'   => $today,
+                'compare' => '>=',
+                'type'    => 'DATE',
+            ]
+        ]
+    ];
+
+    $events = get_posts($args);
+
+    $data = [];
+
+    foreach ($events as $event) {
+        $data[] = [
+            'id'       => $event->ID,
+            'title'    => get_the_title($event->ID),
+            'link'     => get_permalink($event->ID),
+            'date'     => get_post_meta($event->ID, '_event_date', true),
+            'time'     => get_post_meta($event->ID, '_event_time', true),
+            'location' => get_post_meta($event->ID, '_event_location', true),
+            'thumbnail'=> get_the_post_thumbnail_url($event->ID, 'medium'),
+        ];
+    }
+
+    return $data;
+}
