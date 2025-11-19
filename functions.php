@@ -42,10 +42,102 @@ require get_template_directory() . '/inc/cpt.php'; // CPT Event, ACF-style custo
 require get_template_directory() . '/inc/settings.php'; // Company Settings custom settings page
 
 
-// Custom Blocks: Hero CTA and Event Grid
+
+
+
+// Custom Blocks: Event Grid
 add_action('init', function() {
     require get_template_directory() . '/inc/blocks.php';
 });
+
+// Auto-load block.json for custom blocks Hero CTA and Event Grid:
+add_action( 'init', function() {
+    // Auto-load block.json if you prefer, but here we register programmatically:
+    register_block_type( 'proevent/event-grid', array(
+        'api_version'      => 3,
+        'editor_script'    => 'proevent-event-grid-block',
+        'render_callback'  => 'proevent_render_event_grid_block',
+        'description'  => 'Displays a grid of events with customizable parameters.',
+        'attributes'       => array(
+            'limit' => array(
+                'type'    => 'number',
+                'default' => 3,
+            ),
+            'category' => array(
+                'type'    => 'string',
+                'default' => '',
+            ),
+            'order' => array(
+                'type'    => 'string',
+                'default' => 'DESC',
+            ),
+        ),
+    ));
+
+});
+
+// Custom Blocks: Event Grid -Enqueue block
+add_action( 'enqueue_block_editor_assets', function() {
+    wp_enqueue_script(
+        'proevent-event-grid-block',
+        get_template_directory_uri() . '/inc/blocks/event-grid/index.js',
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' ),
+        filemtime( get_template_directory() . '/inc/blocks/event-grid/index.js' )
+    );
+
+});
+
+
+// Custom Blocks: Hero CTA
+function proevent_register_hero_cta_block() {
+    wp_register_script(
+        'proevent-hero-cta-block',
+        get_template_directory_uri() . '/inc/blocks/hero-cta/index.js', // your JS
+        array( 'wp-blocks', 'wp-element', 'wp-editor', 'wp-components' ), // basic WP dependencies
+        filemtime( get_template_directory() . '/inc/blocks/hero-cta/index.js' ),
+        true
+    );
+
+    wp_register_style(
+        'proevent-hero-cta-style',
+        get_template_directory_uri() . '/inc/blocks/hero-cta/style.css', // URL for browser
+        array(),
+        filemtime( get_template_directory() . '/inc/blocks/hero-cta/style.css' ) // server path for version
+    );
+
+    register_block_type( 'proevent/hero-cta', array(
+        'editor_script' => 'proevent-hero-cta-block',
+        'editor_style'  => 'proevent-hero-cta-style',
+        'style'         => 'proevent-hero-cta-style',
+        'render_callback' => 'proevent_render_hero_cta_block',
+        'attributes'      => array(
+            'heroImage' => array(
+                'type' => 'string',
+                'default' => ''
+            ),
+            'heroHeading' => array(
+                'type' => 'string',
+                'default' => 'Your Heading Here'
+            ),
+            'heroButtonText' => array(
+                'type' => 'string',
+                'default' => 'Click Here'
+            ),
+            'heroButtonUrl' => array(
+                'type' => 'string',
+                'default' => '#'
+            ),
+        ),
+    ) );
+}
+add_action( 'init', 'proevent_register_hero_cta_block' );
+
+
+
+
+
+
+
 
 
 // Add Menu settings
